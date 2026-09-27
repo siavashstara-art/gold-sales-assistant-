@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-fa: 'Vazirmatn', 'Plus Jakarta Sans', system-ui, sans-serif;
+    --font-en: 'Plus Jakarta Sans', 'Vazirmatn', system-ui, sans-serif;
+    --font-display: 'Cormorant Garamond', 'Vazirmatn', Georgia, serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    transition: font-size 0.15s ease;
+  }
+
+  html[data-font-scale="normal"] {
+    font-size: 16px;
+  }
+
+  html[data-font-scale="large"] {
+    font-size: 18.5px;
+  }
+
+  html[data-font-scale="xlarge"] {
+    font-size: 21px;
+  }
+
+  html[dir="rtl"] body {
+    font-family: var(--font-fa);
+  }
+
+  html[dir="ltr"] body {
+    font-family: var(--font-en);
+  }
+
+  /* ADHD & Reduced Motion Accessibility */
+  html[data-adhd="true"] *,
+  @media (prefers-reduced-motion: reduce) {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+.font-display-luxury {
+  font-family: var(--font-display);
+}
+
+.font-tabular {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Focus rings for keyboard & disability accessibility */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 3px solid #f59e0b !important;
+  outline-offset: 2px !important;
+}
+
+/* Custom subtle scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.08);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d97706;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #b45309;
+}

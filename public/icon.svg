@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="112" fill="#020617"/>
+  <rect x="24" y="24" width="464" height="464" rx="92" stroke="url(#goldGrad)" stroke-width="6" stroke-opacity="0.6"/>
+  <polygon points="256,88 396,192 332,404 180,404 116,192" fill="url(#goldSoft)" stroke="url(#goldGrad)" stroke-width="14" stroke-linejoin="round"/>
+  <polyline points="116,192 396,192" stroke="url(#goldGrad)" stroke-width="10"/>
+  <polyline points="256,88 195,192 256,404 317,192 256,88" stroke="url(#goldGrad)" stroke-width="10" stroke-linejoin="round"/>
+  <circle cx="256" cy="240" r="18" fill="#10B981"/>
+  <defs>
+    <linearGradient id="goldGrad" x1="96" y1="72" x2="416" y2="432" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="50%" stop-color="#FBBF24"/>
+      <stop offset="100%" stop-color="#B45309"/>
+    </linearGradient>
+    <linearGradient id="goldSoft" x1="256" y1="88" x2="256" y2="404" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FBBF24" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#020617" stop-opacity="0.9"/>
+    </linearGradient>
+  </defs>
+</svg>

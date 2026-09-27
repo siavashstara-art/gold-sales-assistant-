@@ -1,0 +1,6 @@
+{
+  "name": "طلایار جهانی | TalaYar Global VIP",
+  "description": "سامانه هوشمند ویترین زنده، بنکداری و محاسبه‌گر لحظه‌ای طلا، جواهر و سکه ایران و جهان — اکوسیستم آفرینش | شهر جدید نیومتاورسیتی جهان | توان استیج FBNM",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
