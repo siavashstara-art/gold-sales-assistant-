@@ -38,6 +38,12 @@ import { StoryMakerSection } from './components/StoryMakerSection';
 import { QrPassportSection } from './components/QrPassportSection';
 import { AndroidGithubSection } from './components/AndroidGithubSection';
 import { AiVipClubSection } from './components/AiVipClubSection';
+import { WhiteLabelVipCommercialHub } from './components/WhiteLabelVipCommercialHub';
+import {
+  WhiteLabelTenantConfig,
+  resolveInitialTenantFromUrlOrStorage,
+  saveIsolatedTenant,
+} from './utils/tenantStorage';
 import {
   getInitialCachedRatesSync,
   loadLastKnownRatesFromCache,
@@ -94,10 +100,21 @@ export default function App() {
   const [adhdFocus, setAdhdFocus] = useState<boolean>(false);
   const [adhdActiveSection, setAdhdActiveSection] = useState<ActiveSectionFocus>('ALL');
 
-  // Live Market Rates & Products (Hydrated from Service Worker / localStorage cache for instant offline availability)
-  const [rates, setRates] = useState<MarketRatesState>(() =>
-    getInitialCachedRatesSync(DEFAULT_RATES)
+  // Isolated White-Label Multi-Tenant State (synced with URL ?tenant=...&manager=...&city=...&phone=...&ref=...)
+  const [tenant, setTenant] = useState<WhiteLabelTenantConfig>(() =>
+    resolveInitialTenantFromUrlOrStorage()
   );
+
+  // Live Market Rates & Products (Hydrated from Service Worker / localStorage cache for instant offline availability)
+  const [rates, setRates] = useState<MarketRatesState>(() => {
+    const initialRates = getInitialCachedRatesSync(DEFAULT_RATES);
+    const initialTenant = resolveInitialTenantFromUrlOrStorage();
+    return {
+      ...initialRates,
+      galleryName: initialTenant.businessName || initialRates.galleryName,
+      galleryPhone: initialTenant.phone || initialRates.galleryPhone,
+    };
+  });
   const [isOfflineMode, setIsOfflineMode] = useState<boolean>(
     typeof navigator !== 'undefined' ? !navigator.onLine : false
   );
@@ -125,7 +142,7 @@ export default function App() {
   const isRtl = isRtlLanguage(lang);
   const t = getLocalizedHeroStrings(lang);
 
-  // Sync HTML dir, lang, font-scale, and ADHD attributes for full 6-language & WCAG support
+  // Sync HTML dir, lang, font-scale, ADHD attributes, and dynamic White-Label document.title
   useEffect(() => {
     const html = document.documentElement;
     const langMeta = LANGUAGES_LIST.find((l) => l.code === lang) || LANGUAGES_LIST[0];
@@ -138,12 +155,29 @@ export default function App() {
     } else {
       html.classList.remove('dark');
     }
-  }, [lang, fontScale, adhdFocus, themeMode]);
+    if (typeof document !== 'undefined' && tenant?.businessName) {
+      document.title = `${tenant.businessName} | مدیریت: ${tenant.managerName} (${tenant.city}) — طلایار VIP`;
+    }
+  }, [lang, fontScale, adhdFocus, themeMode, tenant]);
+
+  const handleUpdateTenant = (nextTenant: WhiteLabelTenantConfig) => {
+    const saved = saveIsolatedTenant(nextTenant);
+    setTenant(saved);
+    setRates((prev) => {
+      const updatedRates = {
+        ...prev,
+        galleryName: saved.businessName,
+        galleryPhone: saved.phone,
+      };
+      saveRatesToOfflineCache(updatedRates);
+      return updatedRates;
+    });
+  };
 
   // Fetch initial rates from Express backend (or Service Worker offline cache) & apply custom White-Label branding
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const urlBrand = params.get('brand');
+    const urlBrand = params.get('tenant') || params.get('brand');
     const urlPhone = params.get('phone');
     const urlInsta = params.get('insta');
 
@@ -156,8 +190,8 @@ export default function App() {
     const applyBranding = (baseRates: MarketRatesState): MarketRatesState => ({
       ...baseRates,
       ...savedBrand,
-      ...(urlBrand ? { galleryName: urlBrand } : {}),
-      ...(urlPhone ? { galleryPhone: urlPhone } : {}),
+      galleryName: urlBrand || tenant.businessName || baseRates.galleryName,
+      galleryPhone: urlPhone || tenant.phone || baseRates.galleryPhone,
       ...(urlInsta ? { galleryInstagram: urlInsta } : {}),
     });
 
@@ -333,16 +367,46 @@ export default function App() {
         }`}
       >
         <div className="max-w-[1440px] mx-auto px-4 md:px-8 h-16 flex items-center justify-between gap-4">
-          {/* Zone 1: Single Text Element Brand Wordmark */}
+          {/* Zone 1: Single Text Element Brand Wordmark (Synced with Active Isolated White-Label Tenant) */}
           <a
             href="#"
-            className="text-lg md:text-xl font-bold tracking-tight text-amber-500 whitespace-nowrap shrink-0"
+            className="text-base md:text-lg font-bold tracking-tight text-amber-500 whitespace-nowrap shrink-0"
           >
-            {t.brand}
+            {tenant.businessName || t.brand}
           </a>
 
           {/* Zone 2: Clean Text Navigation Links */}
-          <nav className="hidden xl:flex items-center gap-5 text-sm font-semibold">
+          <nav className="hidden xl:flex items-center gap-4 text-xs font-bold">
+            <a
+              href="#tenant-architecture"
+              className="hover:text-amber-500 hover:underline underline-offset-8 transition-colors whitespace-nowrap text-amber-400"
+            >
+              {isRtl ? 'وایت‌لیبل ۱۰ ثانیه‌ای' : 'White-Label Skin'}
+            </a>
+            <a
+              href="#table-calculator"
+              className="hover:text-amber-500 hover:underline underline-offset-8 transition-colors whitespace-nowrap"
+            >
+              {isRtl ? 'ماشین‌حساب صیادی و قفل طلا' : 'Sayad & Lock Calc'}
+            </a>
+            <a
+              href="#deliverables"
+              className="hover:text-amber-500 hover:underline underline-offset-8 transition-colors whitespace-nowrap text-emerald-400"
+            >
+              {isRtl ? 'دستاوردهای خرید (#deliverables)' : 'Deliverables & ROI'}
+            </a>
+            <a
+              href="#visitor-playbook"
+              className="hover:text-amber-500 hover:underline underline-offset-8 transition-colors whitespace-nowrap text-amber-500"
+            >
+              {isRtl ? 'فرمول طلایی ویزیتور (#golden-formula)' : 'Visitor Playbook'}
+            </a>
+            <a
+              href="#invitation-letter"
+              className="hover:text-amber-500 hover:underline underline-offset-8 transition-colors whitespace-nowrap text-purple-400"
+            >
+              {isRtl ? 'دعوت‌نامه و ۲۵٪ شبا (#invitation-letter)' : '25% Sheba & Invite'}
+            </a>
             <a
               href="#showcase"
               className="hover:text-amber-500 hover:underline underline-offset-8 transition-colors whitespace-nowrap"
@@ -372,12 +436,6 @@ export default function App() {
               className="hover:text-amber-500 hover:underline underline-offset-8 transition-colors whitespace-nowrap"
             >
               {t.navStory}
-            </a>
-            <a
-              href="#monetization-reseller"
-              className="hover:text-amber-500 hover:underline underline-offset-8 transition-colors whitespace-nowrap"
-            >
-              {t.navMonetize}
             </a>
           </nav>
 
@@ -779,6 +837,17 @@ export default function App() {
 
       {/* Main Content Container */}
       <main className="max-w-[1440px] mx-auto px-4 md:px-8 py-8 md:py-12 space-y-14">
+        {/* Comprehensive VIP White-Label Architecture, Sayad Check Engine, Inflation Lock, ROI Deliverables, Visitor Playbook & 25% Sheba Hub */}
+        <WhiteLabelVipCommercialHub
+          tenant={tenant}
+          onUpdateTenant={handleUpdateTenant}
+          rates={rates}
+          marketMode={marketMode}
+          lang={lang}
+          themeMode={themeMode}
+          onSpeak={speakText}
+        />
+
         {/* Hero & Instant Making Charge Calculator Section */}
         {shouldShowSection('SHOWCASE') && (
           <section
