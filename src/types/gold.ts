@@ -1,7 +1,7 @@
 export type MarketMode = 'IR' | 'GLOBAL';
-export type Language = 'fa' | 'en';
+export type Language = 'fa' | 'en' | 'ar' | 'ku' | 'tr' | 'az' | 'hy' | 'es';
 export type GlobalCurrency = 'USD' | 'AED' | 'EUR';
-export type GoldKarat = 18 | 21 | 22 | 24 | 925;
+export type GoldKarat = 18 | 21 | 22 | 24 | 840 | 900 | 925 | 999;
 
 export type ProductCategory =
   | 'ALL'
@@ -12,6 +12,7 @@ export type ProductCategory =
   | 'CARTIER_BRACELET'
   | 'EARRINGS'
   | 'BULLION_COIN'
+  | 'SILVER_VESSELS'
   | 'SILVER_925';
 
 export interface JewelryProduct {
@@ -24,9 +25,9 @@ export interface JewelryProduct {
   categoryLabelEn: string;
   weightGrams: number;
   defaultKarat: GoldKarat;
-  retailMakingChargePercent: number; // اجرت ساخت تک‌فروشی (%)
-  wholesaleMakingChargePercent: number; // اجرت بنکداری/کیفی همکار (%)
-  fixedMakingChargeUsdPerGram?: number; // Global market making charge $/g
+  retailMakingChargePercent: number;
+  wholesaleMakingChargePercent: number;
+  fixedMakingChargeUsdPerGram?: number;
   imageUrl: string;
   craftOriginFa: string;
   craftOriginEn: string;
@@ -72,8 +73,7 @@ export interface PriceBreakdown {
   sellerProfitAmount: number;
   taxAmount: number;
   retailTotalPrice: number;
-  // Wholesale B2B (بنکداری / کیفی طلا به طلا)
-  wholesaleGoldSettlementGrams: number; // وزن طلا + درصد اجرت کارگاه به گرم طلای ۷۵۰
+  wholesaleGoldSettlementGrams: number;
   wholesaleCashEquivalent: number;
   currencySymbol: string;
   currencyCode: 'TOMAN' | GlobalCurrency;
@@ -96,4 +96,33 @@ export interface AndroidFileItem {
   path: string;
   size: number;
   content: string;
+}
+
+export type RelatedJobSector =
+  | 'GOLD_GALLERY'
+  | 'GOLD_WHOLESALE'
+  | 'SILVER_VESSELS'
+  | 'SILVER_BULLION'
+  | 'WORKSHOP_CASTING'
+  | 'ASSAY_PLATING'
+  | 'SECURITY_PACKAGING'
+  | 'ACADEMY_DESIGN';
+
+export interface EconomicAdItem {
+  id: string;
+  sector: RelatedJobSector;
+  tariffPlan?: string;
+  titleFa: string;
+  titleEn: string;
+  businessNameFa: string;
+  businessNameEn: string;
+  cityFa: string;
+  cityEn: string;
+  offerBadgeFa: string;
+  offerBadgeEn: string;
+  descriptionFa: string;
+  descriptionEn: string;
+  contactPhone: string;
+  instagramHandle: string;
+  createdAt: string;
 }

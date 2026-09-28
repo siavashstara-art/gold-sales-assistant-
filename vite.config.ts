@@ -47,8 +47,39 @@ export default defineConfig(() => {
           ],
         },
         workbox: {
+          importScripts: ['/sw-rates-strategy.js'],
           globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,woff,woff2}'],
           runtimeCaching: [
+            {
+              urlPattern: /\/api\/rates(\/tick)?$/i,
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'talayar-gold-rates-cache-v1',
+                networkTimeoutSeconds: 3,
+                expiration: {
+                  maxEntries: 5,
+                  maxAgeSeconds: 60 * 60 * 24 * 30, // Keep last known gold rates for 30 days offline
+                },
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
+            },
+            {
+              urlPattern: /\/api\/(ads|certificates)$/i,
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'talayar-api-data-cache-v1',
+                networkTimeoutSeconds: 4,
+                expiration: {
+                  maxEntries: 20,
+                  maxAgeSeconds: 60 * 60 * 24 * 14,
+                },
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
+            },
             {
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
               handler: 'CacheFirst',

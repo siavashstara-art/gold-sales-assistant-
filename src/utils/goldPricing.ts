@@ -1,6 +1,7 @@
 import {
   GlobalCurrency,
   GoldKarat,
+  Language,
   MarketMode,
   MarketRatesState,
   PriceBreakdown,
@@ -8,18 +9,28 @@ import {
 
 const TROY_OUNCE_GRAMS = 31.1034768;
 
+export function isSilverKarat(karat: GoldKarat): boolean {
+  return karat === 840 || karat === 900 || karat === 925 || karat === 999;
+}
+
 export function getKaratPurityRatio(karat: GoldKarat): number {
   switch (karat) {
     case 24:
       return 0.9999;
     case 22:
-      return 22 / 24; // 0.9166
+      return 22 / 24;
     case 21:
-      return 21 / 24; // 0.875
+      return 21 / 24;
     case 18:
-      return 18 / 24; // 0.750
+      return 18 / 24;
+    case 999:
+      return 0.9999;
     case 925:
       return 0.925;
+    case 900:
+      return 0.9;
+    case 840:
+      return 0.84;
   }
 }
 
@@ -30,8 +41,9 @@ export function getUnitGramRate(
   karat: GoldKarat
 ): number {
   if (marketMode === 'IR') {
-    if (karat === 925) {
-      return rates.silver925GramToman;
+    if (isSilverKarat(karat)) {
+      const pure999SilverToman = rates.silver925GramToman / 0.925;
+      return Math.round(pure999SilverToman * getKaratPurityRatio(karat));
     }
     if (karat === 18) return rates.gram18kToman;
     if (karat === 21) return rates.gram21kToman;
@@ -47,9 +59,9 @@ export function getUnitGramRate(
       ? rates.usdToAed
       : rates.usdToEur;
 
-  if (karat === 925) {
+  if (isSilverKarat(karat)) {
     const pureSilverGramUsd = rates.silverOunceUsd / TROY_OUNCE_GRAMS;
-    return Number((pureSilverGramUsd * 0.925 * fxMultiplier).toFixed(2));
+    return Number((pureSilverGramUsd * getKaratPurityRatio(karat) * fxMultiplier).toFixed(2));
   }
 
   const pure24kGramUsd = rates.ounceUsd / TROY_OUNCE_GRAMS;
@@ -86,9 +98,6 @@ export function calculateProductPrice(params: {
   const basePlusMaking = rawGoldValue + makingChargeAmount;
   const sellerProfitAmount = basePlusMaking * (profitPercent / 100);
 
-  // Official Iran Gold & Jewelry Union Rule:
-  // Tax (VAT) applies strictly to (Making Charge + Seller Profit), NOT the raw gold principal!
-  // In Global Mode, VAT (e.g. 5% UAE VAT) is also calculated transparently on making+margin or total.
   const taxableBase = makingChargeAmount + sellerProfitAmount;
   const taxAmount = taxableBase * (taxPercent / 100);
 
@@ -98,8 +107,6 @@ export function calculateProductPrice(params: {
       ? Math.round(retailTotalRaw / 1000) * 1000
       : Number(retailTotalRaw.toFixed(2));
 
-  // B2B Wholesale (بنکداری / کیفی همکار - طلا به طلا):
-  // Weight + Workshop Making Charge % settled in standard gold weight
   const wholesaleGoldSettlementGrams = Number(
     (weightGrams * (1 + wholesaleMakingChargePercent / 100)).toFixed(3)
   );
@@ -140,11 +147,12 @@ export function formatMoney(
   amount: number,
   marketMode: MarketMode,
   globalCurrency: GlobalCurrency,
-  lang: 'fa' | 'en'
+  lang: Language
 ): string {
   if (marketMode === 'IR') {
     const formatted = Math.round(amount).toLocaleString('en-US');
-    return lang === 'fa' ? `${formatted} تومان` : `${formatted} Toman`;
+    const isRtl = lang === 'fa' || lang === 'ar' || lang === 'ku';
+    return isRtl ? `${formatted} تومان` : `${formatted} Toman`;
   }
   const formatted = amount.toLocaleString('en-US', {
     minimumFractionDigits: 2,

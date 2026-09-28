@@ -10,17 +10,20 @@ android {
         applicationId "com.talayar.global"
         minSdk 24
         targetSdk 34
-        versionCode 10
-        versionName "1.0.0-VIP"
+        versionCode 12
+        versionName "1.2.0-VIP"
     }
 
     signingConfigs {
         release {
-            if (System.getenv("KEYSTORE_FILE") != null) {
-                storeFile file(System.getenv("KEYSTORE_FILE"))
-                storePassword System.getenv("KEYSTORE_PASSWORD")
-                keyAlias System.getenv("KEY_ALIAS")
-                keyPassword System.getenv("KEY_PASSWORD")
+            def ksFile = System.getenv("KEYSTORE_FILE") ? file(System.getenv("KEYSTORE_FILE")) : file("release-key.jks")
+            if (ksFile.exists()) {
+                storeFile ksFile
+                storePassword System.getenv("KEYSTORE_PASSWORD") ?: "TalaYarVIP2026!"
+                keyAlias System.getenv("KEY_ALIAS") ?: "talayar-vip-key"
+                keyPassword System.getenv("KEY_PASSWORD") ?: "TalaYarVIP2026!"
+                v1SigningEnabled true
+                v2SigningEnabled true
             }
         }
     }
@@ -34,11 +37,24 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            if (System.getenv("KEYSTORE_FILE") != null) {
+            def ksFile = System.getenv("KEYSTORE_FILE") ? file(System.getenv("KEYSTORE_FILE")) : file("release-key.jks")
+            if (ksFile.exists()) {
                 signingConfig signingConfigs.release
             } else {
                 signingConfig signingConfigs.debug
             }
+        }
+    }
+
+    bundle {
+        language {
+            enableSplit = false
+        }
+        density {
+            enableSplit = true
+        }
+        abi {
+            enableSplit = true
         }
     }
 

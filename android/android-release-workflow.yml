@@ -1,47 +1,101 @@
-name: Build TalaYar Global VIP Android APK & AAB
+name: Zero-Touch Automated Android APK & AAB Signed Release Pipeline
 
 on:
   push:
     branches: [ "main", "master" ]
+    tags: [ "v*" ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
-  build-android:
-    name: Build APK & AAB (Google Play, CafeBazaar, Myket)
+  build-and-release-android:
+    name: Auto-Sign & Publish APK (CafeBazaar/Myket) & AAB (Google Play)
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 17 (Temurin)
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle 8.5
+      - name: Setup Gradle 8.5 Automation
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.5'
 
-      - name: Build Debug APK (Direct Install & Testing)
-        working-directory: ./android
-        run: gradle assembleDebug --no-daemon
+      - name: Auto-Generate RSA-2048 Release Keystore (Zero Manual Intervention)
+        working-directory: ./android/app
+        run: |
+          if [ ! -f release-key.jks ]; then
+            keytool -genkeypair -v \
+              -keystore release-key.jks \
+              -alias talayar-vip-key \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass TalaYarVIP2026! \
+              -keypass TalaYarVIP2026! \
+              -dname "CN=TalaYar Global VIP, OU=FBNM Stage, O=Creation Ecosystem, L=Tehran, S=Tehran, C=IR"
+          fi
 
-      - name: Build Release APK (CafeBazaar & Myket)
+      - name: Build Signed Release APK (CafeBazaar, Myket & Direct Install)
         working-directory: ./android
+        env:
+          KEYSTORE_FILE: release-key.jks
+          KEYSTORE_PASSWORD: TalaYarVIP2026!
+          KEY_ALIAS: talayar-vip-key
+          KEY_PASSWORD: TalaYarVIP2026!
         run: gradle assembleRelease --no-daemon
 
-      - name: Build Release Bundle AAB (Google Play Store)
+      - name: Build Signed Release Bundle AAB (Google Play Console Ready)
         working-directory: ./android
+        env:
+          KEYSTORE_FILE: release-key.jks
+          KEYSTORE_PASSWORD: TalaYarVIP2026!
+          KEY_ALIAS: talayar-vip-key
+          KEY_PASSWORD: TalaYarVIP2026!
         run: gradle bundleRelease --no-daemon
 
-      - name: Upload APK & AAB Artifacts
+      - name: Verify Cryptographic Signatures & Generate SHA-256 Checksums
+        working-directory: ./android
+        run: |
+          mkdir -p release-dist
+          cp app/build/outputs/apk/release/*.apk release-dist/TalaYar-Global-VIP-v1.2.0-signed.apk
+          cp app/build/outputs/bundle/release/*.aab release-dist/TalaYar-Global-VIP-v1.2.0-signed.aab
+          jarsigner -verify -verbose -certs release-dist/TalaYar-Global-VIP-v1.2.0-signed.aab
+          cd release-dist && sha256sum * > SHA256SUMS.txt
+
+      - name: Upload Signed APK & AAB Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: TalaYar-Global-VIP-Android-Release
+          name: TalaYar-AurumMate-VIP-Signed-Android-Packages
           path: |
-            android/app/build/outputs/apk/debug/*.apk
-            android/app/build/outputs/apk/release/*.apk
-            android/app/build/outputs/bundle/release/*.aab
+            android/release-dist/TalaYar-Global-VIP-v1.2.0-signed.apk
+            android/release-dist/TalaYar-Global-VIP-v1.2.0-signed.aab
+            android/release-dist/SHA256SUMS.txt
+
+      - name: Publish Signed GitHub Release (APK + AAB + SHA256)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.2.${{ github.run_number }}
+          name: "TalaYar Global VIP (AurumMate) v1.2.${{ github.run_number }} — Signed APK & AAB"
+          body: |
+            ### 📦 ریلیز رسمی و امضاشده اندروید طلایار جهانی | TalaYar Global VIP (AurumMate)
+            - **پکیج رسمی:** `com.talayar.global` (ساخته‌شده با Gradle 8.5 و JDK 17)
+            - **فایل APK امضاشده (`TalaYar-Global-VIP-v1.2.0-signed.apk`):** دارای امضای V1 + V2، آماده بارگذاری در **کافه‌بازار، مایکت** و نصب مستقیم روی تمامی گوشی‌های اندروید.
+            - **فایل AAB امضاشده (`TalaYar-Global-VIP-v1.2.0-signed.aab`):** دارای امضای رسمی RSA-2048، آماده انتشار در **Google Play Console**.
+            - **پشتیبانی از ۸ زبان زنده دنیا:** فارسی، انگلیسی، عربی، کُردی، ترکی استانبولی، آذری، ارمنی و اسپانیایی.
+          files: |
+            android/release-dist/TalaYar-Global-VIP-v1.2.0-signed.apk
+            android/release-dist/TalaYar-Global-VIP-v1.2.0-signed.aab
+            android/release-dist/SHA256SUMS.txt
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
